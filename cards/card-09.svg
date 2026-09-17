@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 750 1050" width="750" height="1050">
+  <defs>
+    <style type="text/css">
+      @font-face {
+        font-family: 'Cunning Display';
+        font-weight: 800;
+        src: url(data:font/woff2;charset=utf-8;base64,d09GMgABAAAAAAUwAAwAAAAACRwAAATjAAQBBgAAAAAAAAAAAAAAAAAAAAAAAAAAGyAcMAZgAFwKiSyHRwE2AiQDQAsiAAQgBYMYByAbRAcIHoVx41NaOTnFU1wzj0UWDz1r/7szu9/MmjlaSZrooiFDI1QOCU8000iz0qnv+PesSdPVy1KVllK6clY6pHtWv05yTkD8///3TpvzeLQ14AgTuY0xXsvH2PRP1Mkw+ti2aGPHJ3iUQCCBUP7mj1IY9TFhYjbezK24++xogXqDuLDjUwkZoK2Eyn8AEy9yghebXqvscAOuEEpHRYjWl0VTwQcN8iErBzgvJXGVW6QIv85kaHY7eyEqGQ5ykVla/1NDRdmYrdA9co11DMAoNhIFOuHCCtnOfK5ZrVRtQ7hosZJkVrDqv6Py6+Sxowd3wzSsVoxRvV0g7oD4/4MGG02hHLnbCmNg3EZdTSt7AhdY62rZeMCXseWxkel9hlBdg8GriL6OPb6O6KsweI1QMVhx6LGRBsNUxaH1iN7IQYZAOoOAxhjXFq8HGO09F8kiFu8jVAewofMIYcS2M9jQakSvtUTZQTawCKhXH/mHqLMRnmmHNYWyQHk/ondaIlzvte9qBmqYAIj2tCYTXd0Lg5Gm2suouBHTu83G1KDPqUFtycUz+xFNQwmaGmewlfmGZdooEhIMZhz232ZWY9b/m4AzMSVBPj19WZONMD14PV0fbShmIw0DVJVmG1FZEMU5eIlQXcFwgvVIPFwqUh2bO3f82Nr1gjdvHn1s/XCupMjfXyvkFYiLAgL+pgIwGt/pcfucCIZe9NSnt3nyj9hyPujvZ+Wcbmv1iu7p7CpV0tvI6F/L/s0C95sjVEdinYd3nm9EaMoSNrU4EOxbXO+Z0DedYvW+t8iXcnCuFPcWLROmxCl496w5KzkHwO2+2m0bsz5xdSJ1nNLvfnCRBr8lh0ZRqIU8piTUsTakY2xCZzrlE1wJoe+lRgJRsFyWI7ZBogO770H3/H+eszgbCnfjRU6lbZ1NcQENLf5Ji6iDm44O7Jja2jGoWfSm+OQJiWyBTDxJKpksgV8x72NOfXTlrHwC4W+VXj45rR6ZmRvQXC9Pp4S5fp65gbGxyl7PhAQCcscG+i/h92qxF5cTLRRGcjiRQvLcG6n4rkx2Tiy9I4W/84Mc+RlFAdECx5LOzua4wIYW/8QF1M6Nx9oOTU1sCPKr8t9RcoISySeKxZOkoslS4P3MUi/LU45uGbeirsjCFA4RKSWpaeyOcPDcsis96LtHlRig16uGnzeIdfK4jOLU/LyibNK+4NiUhv1kTunEoOwadV6OulqZo16RVzO2bsC0AX4fPHT0EBz7wp5MWzA3OnXaUfh+cIFvopdXg8+CowtKUyeNR2RlTYhImFi2AAACZWh+mLpqWmwQ8FUbx18A8PvJqrMA/Ov2OvV3/d/5OjPYpUCNJKz/gNx1IxDjx9+pgH0RP1Z8IR+BLEbAOH2Bl2XkuQXccxrkZg/fJKAnp4B7FlHkN6P51Wh4gE/+tZ4nwROGVtNB13Waa3YrJGpchItSB3gM4EnDOLU0NfsiLey7jC1RaZX6MN6v2njYQrhGTbq0qEZSasPnxkUjvowOsdKWAsMONdqg1YcYSLpGpXJBodptWqlRC2aTJ6I2TS7y46yipGoQcFTGKQwSrefcc1dhkNkaVGjRxXnleMUbUCSKvtMWpcI0qlMhTSVSuzqlWsTKECWZP36GFk56cOKi6jyU8eGOSlHl6MM16irbuAE=) format('woff2');
+      }
+      .title {
+        font-family: 'Cunning Display', sans-serif;
+        font-weight: 800;
+        letter-spacing: 14px;
+      }
+      .num {
+        font-family: 'Cunning Display', sans-serif;
+        font-weight: 800;
+      }
+    </style>
+    <linearGradient id="bg9" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e147e1"/>
+      <stop offset="1" stop-color="#a71ba7"/>
+    </linearGradient>
+    <radialGradient id="glow9" cx="0.5" cy="0.46" r="0.42">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect x="0" y="0" width="750" height="1050" rx="36" ry="36" fill="#ffffff"/>
+  <rect x="26" y="26" width="698" height="998" rx="26" ry="26"
+        fill="url(#bg9)" stroke="#691169" stroke-width="6"/>
+  <rect x="26" y="26" width="698" height="998" rx="26" ry="26"
+        fill="url(#glow9)"/>
+
+  <text x="375.0" y="182" class="title" font-size="54" fill="#ffffff" fill-opacity="0.92"
+        text-anchor="middle">CUNNING</text>
+
+  <text x="382.0" y="597" class="num" font-size="480" fill="rgba(0,0,0,0.35)"
+        text-anchor="middle" dominant-baseline="middle">9</text>
+  <text x="375.0" y="590" class="num" font-size="480" fill="#ffffff"
+        text-anchor="middle" dominant-baseline="middle">9</text>
+</svg>
