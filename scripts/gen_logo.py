@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
-"""Generate the Cunning game logo in square, 4:3, and 16:9 formats,
-built from assets/nexxus.png and the shared brand font/colors.
+"""Generate the Cunning game's branding/logo asset set, built from
+assets/nexxus.png and the shared brand font/colors.
 
 Usage:
     python3 scripts/gen_logo.py
 
-Output:
-    assets/branding/game-logo-square.svg / .png  (1200x1200)
-    assets/branding/game-logo-4x3.svg / .png     (1600x1200)
-    assets/branding/game-logo-16x9.svg / .png    (1920x1080)
+Output (all under assets/branding/):
+    game-logo-square.svg / .png   (1200x1200)
+    game-logo-4x3.svg / .png      (1600x1200)
+    game-logo-16x9.svg / .png     (1920x1080)
+    game-logo-banner.svg / .png   (1920x480, website header)
+    social-preview.svg / .png     (1200x630, Open Graph / Twitter card)
+    icon/icon-{512,192,48,32,16}.png, icon/favicon.ico  (text-free mark)
 """
 import base64
 import io
@@ -187,6 +190,37 @@ def build_wide(font_b64, panel_b64, panel_aspect, logo_b64, logo_aspect, *, w, h
     return svg
 
 
+ICON_TEMPLATE = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="{w}" height="{h}">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="{bg_top}"/>
+      <stop offset="1" stop-color="{bg_bot}"/>
+    </linearGradient>
+    <clipPath id="clip"><circle cx="{cx}" cy="{cy}" r="{r}"/></clipPath>
+  </defs>
+  <rect x="0" y="0" width="{w}" height="{h}" fill="url(#bg)"/>
+  <circle cx="{cx}" cy="{cy}" r="{ring_r}" fill="none" stroke="{gold}" stroke-width="{ring_w}"/>
+  <image x="{ix}" y="{iy}" width="{isz}" height="{isz}" clip-path="url(#clip)"
+         href="data:image/png;base64,{head_b64}"/>
+  <circle cx="{cx}" cy="{cy}" r="{r}" fill="none" stroke="{gold_bright}" stroke-width="{inner_w}"/>
+</svg>
+"""
+
+
+def build_icon(head_b64, w=512, h=512):
+    """A text-free mark: the medallion alone, filling the whole square.
+    Meant for contexts too small for the title to read (favicons, app
+    icons, chat avatars)."""
+    cx, cy = w / 2, h / 2
+    r = w * 0.42
+    svg = ICON_TEMPLATE.format(
+        w=w, h=h, bg_top=BG_TOP, bg_bot=BG_BOT, gold=GOLD, gold_bright=GOLD_BRIGHT,
+        cx=cx, cy=cy, r=r, ring_r=r + w * 0.014, ring_w=w * 0.03, inner_w=w * 0.012,
+        ix=cx - r, iy=cy - r, isz=r * 2, head_b64=head_b64,
+    )
+    return svg
+
+
 def build_banner(font_b64, head_b64, head_aspect, logo_b64, logo_aspect, *, w=1920, h=480):
     """A short, wide website-header banner. Uses the square head crop
     (rather than the full-body panel) since there isn't enough height
@@ -257,9 +291,38 @@ if __name__ == "__main__":
     outputs.append((path, (1920, 480)))
     print("wrote", path)
 
+    # Open Graph / Twitter card link-preview image: the same wide layout at
+    # the standard 1200x630 social size.
+    svg = build_wide(font_b64, panel_b64, panel_aspect, logo_b64, logo_aspect, w=1200, h=630)
+    path = OUT_DIR / "social-preview.svg"
+    path.write_text(svg)
+    outputs.append((path, (1200, 630)))
+    print("wrote", path)
+
+    # Text-free mark for favicons / app icons / avatars, where the title
+    # wordmark would be illegible at the render size.
+    icon_dir = OUT_DIR / "icon"
+    icon_dir.mkdir(parents=True, exist_ok=True)
+    svg = build_icon(med_b64, w=512, h=512)
+    icon_master_path = icon_dir / "icon-512.svg"
+    icon_master_path.write_text(svg)
+    outputs.append((icon_master_path, (512, 512)))
+    print("wrote", icon_master_path)
+
     chrome = find_chromium()
     if chrome:
         for path, size in outputs:
             rasterize(path, chrome, size)
+
+        icon_512 = Image.open(icon_dir / "icon-512.png").convert("RGBA")
+        for size in (192, 48, 32, 16):
+            out = icon_dir / f"icon-{size}.png"
+            icon_512.resize((size, size), Image.LANCZOS).save(out)
+            print("wrote", out)
+        icon_512.save(
+            icon_dir / "favicon.ico",
+            sizes=[(16, 16), (32, 32), (48, 48)],
+        )
+        print("wrote", icon_dir / "favicon.ico")
     else:
         print("No Chromium/Chrome binary found; skipped PNG export.")
