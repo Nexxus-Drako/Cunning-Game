@@ -7,7 +7,7 @@ The game is played with cards with values of 1 through 10, with there being ten 
 
 The game ends after a player-determined number of rounds, usually five.
 
-There is no physical release, it is currently being play-tested purely online via Tabletop Simulator at present.
+There is no physical release, it is currently being play-tested purely online via [Tabletop Simulator](https://steamcommunity.com/sharedfiles/filedetails/?id=3803099849) at present.
 
 Cunning was designed by Pyra Drake and published by Nexxus Drako Multimedia.
 
