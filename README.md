@@ -8,3 +8,5 @@ The game is played with cards with values of 1 through 10, with there being ten 
 The game ends after a player-determined number of rounds, usually five.
 
 There is no physical release, it is currently being play-tested purely online via Tabletop Simulator at present.
+
+Cunning was designed by Pyra Drake and published by Nexxus Drako Multimedia.

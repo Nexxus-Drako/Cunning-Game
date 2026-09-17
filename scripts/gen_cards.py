@@ -2,12 +2,15 @@
 """Generate the Cunning number cards (1-10) as self-contained SVGs, and
 rasterize them to PNG if a Chromium/Chrome binary is available.
 
+Two sets are produced:
+  - cards/*.svg + cards/png/*.png       digital cards, rounded corners
+  - cards/print/*.svg + cards/print/png/*.png
+        print-ready cards: square corners with a bleed margin around the
+        trim line, so a printer/cutter has tolerance without exposing
+        unprinted paper at the edge.
+
 Usage:
     python3 scripts/gen_cards.py
-
-Output:
-    cards/card-01.svg .. cards/card-10.svg
-    cards/png/card-01.png .. cards/png/card-10.png (if a browser is found)
 """
 import base64
 import colorsys
@@ -26,15 +29,18 @@ LOGO_PATHS = {
 }
 CARDS_DIR = ROOT / "cards"
 PNG_DIR = CARDS_DIR / "png"
+PRINT_DIR = CARDS_DIR / "print"
+PRINT_PNG_DIR = PRINT_DIR / "png"
 
-W, H = 750, 1050          # standard poker-card ratio at 300 DPI
+W, H = 750, 1050          # standard poker-card trim size, 2.5x3.5in @ 300 DPI
 OUTER_RADIUS = 36
 MARGIN = 26
 INNER_RADIUS = 26
+BLEED = 37                # ~0.125in @ 300 DPI, standard print bleed allowance
 
-LOGO_MAX_W = 570          # available width for the footer logo
-LOGO_MAX_H = 150          # available height for the footer logo
-LOGO_BOTTOM_PAD = 40      # gap between logo and inner border
+LOGO_MAX_W = 520          # available width for the footer logo
+LOGO_MAX_H = 130          # available height for the footer logo
+LOGO_BOTTOM_PAD = 130     # gap between logo and inner border
 LOGO_EMBED_WIDTH = 960    # px width to rasterize the logo at before embedding (retina-sharp, still small)
 
 
@@ -129,8 +135,10 @@ def embed_logo(variant):
     return result
 
 
-SVG_TEMPLATE = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="{w}" height="{h}">
-  <defs>
+# The face content is authored once in the WxH trim coordinate system, then
+# wrapped in a <g translate> and dropped onto a canvas of whatever size the
+# digital or print variant needs (see render_card_svg).
+FACE_TEMPLATE = """  <defs>
     <style type="text/css">
       @font-face {{
         font-family: 'Cunning Display';
@@ -157,49 +165,60 @@ SVG_TEMPLATE = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" 
     </radialGradient>
   </defs>
 
-  <rect x="0" y="0" width="{w}" height="{h}" rx="{r}" ry="{r}" fill="#ffffff"/>
-  <rect x="{margin}" y="{margin}" width="{iw}" height="{ih}" rx="{ir}" ry="{ir}"
-        fill="url(#bg{n})" stroke="{border}" stroke-width="6"/>
-  <rect x="{margin}" y="{margin}" width="{iw}" height="{ih}" rx="{ir}" ry="{ir}"
-        fill="url(#glow{n})"/>
+  <rect x="0" y="0" width="{w}" height="{h}" rx="{outer_r}" ry="{outer_r}" fill="#ffffff"/>
+  <g transform="translate({bleed},{bleed})">
+    <rect x="{margin}" y="{margin}" width="{iw}" height="{ih}" rx="{ir}" ry="{ir}"
+          fill="url(#bg{n})" stroke="{border}" stroke-width="6"/>
+    <rect x="{margin}" y="{margin}" width="{iw}" height="{ih}" rx="{ir}" ry="{ir}"
+          fill="url(#glow{n})"/>
 
-  <text x="{cx}" y="182" class="title" font-size="54" fill="{text}" fill-opacity="{title_op}"
-        text-anchor="middle">CUNNING</text>
+    <text x="{cx}" y="182" class="title" font-size="54" fill="{text}" fill-opacity="{title_op}"
+          text-anchor="middle">CUNNING</text>
 
-  <text x="{cxs}" y="{numys}" class="num" font-size="440" fill="{shadow}"
-        text-anchor="middle" dominant-baseline="middle">{n}</text>
-  <text x="{cx}" y="{numy}" class="num" font-size="440" fill="{text}"
-        text-anchor="middle" dominant-baseline="middle">{n}</text>
+    <text x="{cxs}" y="{numys}" class="num" font-size="440" fill="{shadow}"
+          text-anchor="middle" dominant-baseline="middle">{n}</text>
+    <text x="{cx}" y="{numy}" class="num" font-size="440" fill="{text}"
+          text-anchor="middle" dominant-baseline="middle">{n}</text>
 
-  <image x="{logo_x}" y="{logo_y}" width="{logo_w}" height="{logo_h}"
-         href="data:image/png;base64,{logo_b64}"/>
-</svg>
+    <image x="{logo_x}" y="{logo_y}" width="{logo_w}" height="{logo_h}"
+           href="data:image/png;base64,{logo_b64}"/>
+  </g>
 """
 
 
-def generate_svgs():
-    font_b64 = base64.b64encode(FONT_PATH.read_bytes()).decode("ascii")
-    cards = build_palette()
-    CARDS_DIR.mkdir(parents=True, exist_ok=True)
+def render_card_svg(n, c, font_b64, *, bleed, outer_r):
+    canvas_w, canvas_h = W + 2 * bleed, H + 2 * bleed
     iw = W - 2 * MARGIN
     ih = H - 2 * MARGIN
-    numy = 530
+    numy = 505
     inner_bottom = MARGIN + ih
+    logo_b64, logo_w, logo_h = embed_logo(c["logo_variant"])
+    logo_y = inner_bottom - LOGO_BOTTOM_PAD - logo_h
+
+    face = FACE_TEMPLATE.format(
+        w=canvas_w, h=canvas_h, outer_r=outer_r, bleed=bleed,
+        margin=MARGIN, iw=iw, ih=ih, ir=INNER_RADIUS,
+        cx=W / 2, cxs=W / 2 + 7, n=n,
+        top=c["top"], bot=c["bot"], border=c["border"],
+        text=c["text"], shadow=c["shadow"], title_op=c["title_op"],
+        numy=numy, numys=numy + 7,
+        font_b64=font_b64,
+        logo_x=(W - logo_w) / 2, logo_y=logo_y, logo_w=logo_w, logo_h=logo_h,
+        logo_b64=logo_b64,
+    )
+    return (
+        f'<svg xmlns="http://www.w3.org/2000/svg" '
+        f'viewBox="0 0 {canvas_w} {canvas_h}" width="{canvas_w}" height="{canvas_h}">\n'
+        f"{face}</svg>\n"
+    )
+
+
+def generate(cards, font_b64, out_dir, *, bleed, outer_r, suffix=""):
+    out_dir.mkdir(parents=True, exist_ok=True)
     paths = []
     for n, c in cards.items():
-        logo_b64, logo_w, logo_h = embed_logo(c["logo_variant"])
-        logo_y = inner_bottom - LOGO_BOTTOM_PAD - logo_h
-        svg = SVG_TEMPLATE.format(
-            w=W, h=H, r=OUTER_RADIUS, margin=MARGIN, iw=iw, ih=ih, ir=INNER_RADIUS,
-            cx=W / 2, cxs=W / 2 + 7, n=n,
-            top=c["top"], bot=c["bot"], border=c["border"],
-            text=c["text"], shadow=c["shadow"], title_op=c["title_op"],
-            numy=numy, numys=numy + 7,
-            font_b64=font_b64,
-            logo_x=(W - logo_w) / 2, logo_y=logo_y, logo_w=logo_w, logo_h=logo_h,
-            logo_b64=logo_b64,
-        )
-        path = CARDS_DIR / f"card-{n:02d}.svg"
+        svg = render_card_svg(n, c, font_b64, bleed=bleed, outer_r=outer_r)
+        path = out_dir / f"card-{n:02d}{suffix}.svg"
         path.write_text(svg)
         paths.append(path)
         print("wrote", path, f"(logo: {c['logo_variant']})")
@@ -217,23 +236,36 @@ def find_chromium():
     return None
 
 
-def rasterize(paths, chrome):
-    PNG_DIR.mkdir(parents=True, exist_ok=True)
+RENDER_PAD = 80  # extra viewport height rendered then cropped away, so any
+                  # browser-chrome sliver at the bottom never eats real content
+
+
+def rasterize(paths, chrome, out_dir, size):
+    out_dir.mkdir(parents=True, exist_ok=True)
+    target_w, target_h = size
     for path in paths:
-        out = PNG_DIR / (path.stem + ".png")
+        out = out_dir / (path.stem + ".png")
         subprocess.run(
-            [chrome, "--headless", "--disable-gpu", "--no-sandbox",
-             f"--screenshot={out}", f"--window-size={W},{H}",
+            [chrome, "--headless", "--disable-gpu", "--no-sandbox", "--hide-scrollbars",
+             f"--screenshot={out}", f"--window-size={target_w},{target_h + RENDER_PAD}",
              f"file://{path}"],
             check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         )
+        with Image.open(out) as im:
+            im.crop((0, 0, target_w, target_h)).save(out)
         print("wrote", out)
 
 
 if __name__ == "__main__":
-    svg_paths = generate_svgs()
+    font_b64 = base64.b64encode(FONT_PATH.read_bytes()).decode("ascii")
+    cards = build_palette()
+
+    digital_paths = generate(cards, font_b64, CARDS_DIR, bleed=0, outer_r=OUTER_RADIUS)
+    print_paths = generate(cards, font_b64, PRINT_DIR, bleed=BLEED, outer_r=0, suffix="-print")
+
     chrome = find_chromium()
     if chrome:
-        rasterize(svg_paths, chrome)
+        rasterize(digital_paths, chrome, PNG_DIR, (W, H))
+        rasterize(print_paths, chrome, PRINT_PNG_DIR, (W + 2 * BLEED, H + 2 * BLEED))
     else:
         print("No Chromium/Chrome binary found; skipped PNG export.")
