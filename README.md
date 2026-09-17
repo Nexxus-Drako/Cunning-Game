@@ -1,5 +1,5 @@
 # Cunning
-A trick-taking game in where the goal is to play the lowest card of the trick face down to win points equal to the value of all cards in play.
+A trick-taking game in where the goal is to play the highest card of the trick face down to win points equal to the value of all cards in play.
 
 Each player is dealt seven cards to start, and plays seven tricks per round using those seven cards..
 
