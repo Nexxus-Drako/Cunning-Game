@@ -27,6 +27,9 @@ LOGO_PATHS = {
     "gold": ROOT / "assets" / "logo-gold.png",
     "red": ROOT / "assets" / "logo-red.png",
 }
+MEDALLION_PATH = ROOT / "assets" / "nexxus.png"
+MEDALLION_CROP_BOX = (410, 0, 1510, 1100)   # square crop: face, wings, upper torso
+MEDALLION_EMBED_SIZE = 700                  # px, downscaled before embedding
 CARDS_DIR = ROOT / "cards"
 PNG_DIR = CARDS_DIR / "png"
 PRINT_DIR = CARDS_DIR / "print"
@@ -40,8 +43,17 @@ BLEED = 37                # ~0.125in @ 300 DPI, standard print bleed allowance
 
 LOGO_MAX_W = 520          # available width for the footer logo
 LOGO_MAX_H = 130          # available height for the footer logo
-LOGO_BOTTOM_PAD = 130     # gap between logo and inner border
+LOGO_BOTTOM_PAD = 70      # gap between logo and inner border
 LOGO_EMBED_WIDTH = 960    # px width to rasterize the logo at before embedding (retina-sharp, still small)
+
+# Card-back color scheme: a deep maroon-to-black gradient echoing the
+# mascot's wings, distinct from every numbered face card.
+BACK_TOP = "#4a0e16"
+BACK_BOT = "#0a0505"
+BACK_BORDER = "#c9a227"
+BACK_TEXT = "#f0c93d"
+MEDALLION_DIAMETER = 480
+MEDALLION_RING_WIDTH = 10
 
 
 def hsl_to_hex(h, s, l):
@@ -135,6 +147,23 @@ def embed_logo(variant):
     return result
 
 
+_medallion_b64_cache = None
+
+
+def embed_medallion():
+    """Crop the mascot art to a square portrait and downscale it for a
+    small, sharp embed as the card-back medallion."""
+    global _medallion_b64_cache
+    if _medallion_b64_cache is not None:
+        return _medallion_b64_cache
+    im = Image.open(MEDALLION_PATH).convert("RGBA").crop(MEDALLION_CROP_BOX)
+    im = im.resize((MEDALLION_EMBED_SIZE, MEDALLION_EMBED_SIZE), Image.LANCZOS)
+    buf = io.BytesIO()
+    im.save(buf, format="PNG", optimize=True)
+    _medallion_b64_cache = base64.b64encode(buf.getvalue()).decode("ascii")
+    return _medallion_b64_cache
+
+
 # The face content is authored once in the WxH trim coordinate system, then
 # wrapped in a <g translate> and dropped onto a canvas of whatever size the
 # digital or print variant needs (see render_card_svg).
@@ -190,7 +219,7 @@ def render_card_svg(n, c, font_b64, *, bleed, outer_r):
     canvas_w, canvas_h = W + 2 * bleed, H + 2 * bleed
     iw = W - 2 * MARGIN
     ih = H - 2 * MARGIN
-    numy = 505
+    numy = H / 2
     inner_bottom = MARGIN + ih
     logo_b64, logo_w, logo_h = embed_logo(c["logo_variant"])
     logo_y = inner_bottom - LOGO_BOTTOM_PAD - logo_h
@@ -211,6 +240,97 @@ def render_card_svg(n, c, font_b64, *, bleed, outer_r):
         f'viewBox="0 0 {canvas_w} {canvas_h}" width="{canvas_w}" height="{canvas_h}">\n'
         f"{face}</svg>\n"
     )
+
+
+BACK_TEMPLATE = """  <defs>
+    <style type="text/css">
+      @font-face {{
+        font-family: 'Cunning Display';
+        font-weight: 800;
+        src: url(data:font/woff2;charset=utf-8;base64,{font_b64}) format('woff2');
+      }}
+      .title {{
+        font-family: 'Cunning Display', sans-serif;
+        font-weight: 800;
+        letter-spacing: 14px;
+      }}
+    </style>
+    <linearGradient id="backbg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="{top}"/>
+      <stop offset="1" stop-color="{bot}"/>
+    </linearGradient>
+    <radialGradient id="backglow" cx="0.5" cy="0.46" r="0.42">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="medallionClip">
+      <circle cx="{cx}" cy="{med_cy}" r="{med_r}"/>
+    </clipPath>
+  </defs>
+
+  <rect x="0" y="0" width="{w}" height="{h}" rx="{outer_r}" ry="{outer_r}" fill="#ffffff"/>
+  <g transform="translate({bleed},{bleed})">
+    <rect x="{margin}" y="{margin}" width="{iw}" height="{ih}" rx="{ir}" ry="{ir}"
+          fill="url(#backbg)" stroke="{border}" stroke-width="6"/>
+    <rect x="{margin}" y="{margin}" width="{iw}" height="{ih}" rx="{ir}" ry="{ir}"
+          fill="url(#backglow)"/>
+
+    <text x="{cx}" y="182" class="title" font-size="54" fill="{text}"
+          text-anchor="middle">CUNNING</text>
+
+    <circle cx="{cx}" cy="{med_cy}" r="{ring_outer_r}" fill="none"
+            stroke="{border}" stroke-width="{ring_width}"/>
+    <image x="{med_x}" y="{med_y}" width="{med_size}" height="{med_size}"
+           clip-path="url(#medallionClip)"
+           href="data:image/png;base64,{medallion_b64}"/>
+    <circle cx="{cx}" cy="{med_cy}" r="{med_r}" fill="none"
+            stroke="{text}" stroke-width="4"/>
+
+    <image x="{logo_x}" y="{logo_y}" width="{logo_w}" height="{logo_h}"
+           href="data:image/png;base64,{logo_b64}"/>
+  </g>
+"""
+
+
+def render_back_svg(font_b64, medallion_b64, *, bleed, outer_r):
+    canvas_w, canvas_h = W + 2 * bleed, H + 2 * bleed
+    iw = W - 2 * MARGIN
+    ih = H - 2 * MARGIN
+    med_r = MEDALLION_DIAMETER / 2
+    med_cy = H / 2  # matches the number's vertical center on the face cards
+    inner_bottom = MARGIN + ih
+
+    logo_variant = pick_logo_variant(BACK_TOP, BACK_BOT)
+    logo_b64, logo_w, logo_h = embed_logo(logo_variant)
+    logo_y = inner_bottom - LOGO_BOTTOM_PAD - logo_h
+
+    face = BACK_TEMPLATE.format(
+        w=canvas_w, h=canvas_h, outer_r=outer_r, bleed=bleed,
+        margin=MARGIN, iw=iw, ih=ih, ir=INNER_RADIUS,
+        cx=W / 2, top=BACK_TOP, bot=BACK_BOT, border=BACK_BORDER, text=BACK_TEXT,
+        med_cy=med_cy, med_r=med_r,
+        ring_outer_r=med_r + MEDALLION_RING_WIDTH / 2, ring_width=MEDALLION_RING_WIDTH,
+        med_x=W / 2 - med_r, med_y=med_cy - med_r, med_size=MEDALLION_DIAMETER,
+        medallion_b64=medallion_b64,
+        logo_x=(W - logo_w) / 2, logo_y=logo_y, logo_w=logo_w, logo_h=logo_h,
+        logo_b64=logo_b64,
+        font_b64=font_b64,
+    )
+    return (
+        f'<svg xmlns="http://www.w3.org/2000/svg" '
+        f'viewBox="0 0 {canvas_w} {canvas_h}" width="{canvas_w}" height="{canvas_h}">\n'
+        f"{face}</svg>\n"
+    )
+
+
+def generate_back(font_b64, out_dir, *, bleed, outer_r, suffix=""):
+    out_dir.mkdir(parents=True, exist_ok=True)
+    medallion_b64 = embed_medallion()
+    svg = render_back_svg(font_b64, medallion_b64, bleed=bleed, outer_r=outer_r)
+    path = out_dir / f"back{suffix}.svg"
+    path.write_text(svg)
+    print("wrote", path)
+    return path
 
 
 def generate(cards, font_b64, out_dir, *, bleed, outer_r, suffix=""):
@@ -263,9 +383,12 @@ if __name__ == "__main__":
     digital_paths = generate(cards, font_b64, CARDS_DIR, bleed=0, outer_r=OUTER_RADIUS)
     print_paths = generate(cards, font_b64, PRINT_DIR, bleed=BLEED, outer_r=0, suffix="-print")
 
+    back_digital = generate_back(font_b64, CARDS_DIR, bleed=0, outer_r=OUTER_RADIUS)
+    back_print = generate_back(font_b64, PRINT_DIR, bleed=BLEED, outer_r=0, suffix="-print")
+
     chrome = find_chromium()
     if chrome:
-        rasterize(digital_paths, chrome, PNG_DIR, (W, H))
-        rasterize(print_paths, chrome, PRINT_PNG_DIR, (W + 2 * BLEED, H + 2 * BLEED))
+        rasterize(digital_paths + [back_digital], chrome, PNG_DIR, (W, H))
+        rasterize(print_paths + [back_print], chrome, PRINT_PNG_DIR, (W + 2 * BLEED, H + 2 * BLEED))
     else:
         print("No Chromium/Chrome binary found; skipped PNG export.")
