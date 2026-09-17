@@ -9,4 +9,6 @@ The game ends after a player-determined number of rounds, usually five.
 
 There is no physical release, it is currently being play-tested purely online via Tabletop Simulator at present.
 
+Cunning was designed by Pyra Drake and published by Nexxus Drako Multimedia.
+
 DISCLOSURE: The cards have been generated using code created by Claude Sonnet 5. These cards will be replaced with actual playing card style art for a limited-run physical release in the medium-term.
