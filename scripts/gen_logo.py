@@ -187,6 +187,34 @@ def build_wide(font_b64, panel_b64, panel_aspect, logo_b64, logo_aspect, *, w, h
     return svg
 
 
+def build_banner(font_b64, head_b64, head_aspect, logo_b64, logo_aspect, *, w=1920, h=480):
+    """A short, wide website-header banner. Uses the square head crop
+    (rather than the full-body panel) since there isn't enough height
+    for a full-body side panel to read well."""
+    panel_w = h * head_aspect
+    panel_x = w - panel_w
+    fade_w = min(panel_w * 0.4, 170)
+    title_size = 128
+    title_x = round(w * 0.055)
+    title_y = round(h * 0.58)
+    rule_y = title_y + 34
+    rule_w = round(w * 0.16)
+    logo_w = 240
+    logo_h = logo_w * logo_aspect
+    logo_x = title_x
+    logo_y = h - logo_h - 34
+    svg = WIDE_TEMPLATE.format(
+        w=w, h=h, font_b64=font_b64, bg_top=BG_TOP, bg_bot=BG_BOT,
+        panel_x=panel_x, panel_w=panel_w, panel_b64=head_b64,
+        fade_stop=fade_w / panel_w,
+        title_x=title_x, title_xs=title_x + 5, title_y=title_y, title_ys=title_y + 5,
+        title_size=title_size, gold_bright=GOLD_BRIGHT, gold=GOLD,
+        rule_y=rule_y, rule_w=rule_w,
+        logo_x=logo_x, logo_y=logo_y, logo_w=logo_w, logo_h=logo_h, logo_b64=logo_b64,
+    )
+    return svg
+
+
 if __name__ == "__main__":
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     font_b64 = base64.b64encode(FONT_PATH.read_bytes()).decode("ascii")
@@ -220,6 +248,13 @@ if __name__ == "__main__":
     path = OUT_DIR / "game-logo-16x9.svg"
     path.write_text(svg)
     outputs.append((path, (1920, 1080)))
+    print("wrote", path)
+
+    head_aspect = head_im.width / head_im.height  # 1.0, HEAD_CROP is square
+    svg = build_banner(font_b64, med_b64, head_aspect, logo_b64, logo_aspect, w=1920, h=480)
+    path = OUT_DIR / "game-logo-banner.svg"
+    path.write_text(svg)
+    outputs.append((path, (1920, 480)))
     print("wrote", path)
 
     chrome = find_chromium()
