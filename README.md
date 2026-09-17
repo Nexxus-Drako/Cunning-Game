@@ -8,3 +8,5 @@ The game is played with cards with values of 1 through 10, with there being ten 
 The game ends after a player-determined number of rounds, usually five.
 
 There is no physical release, it is currently being play-tested purely online via Tabletop Simulator at present.
+
+DISCLOSURE: The cards have been generated using code created by Claude Sonnet 5. These cards will be replaced with actual playing card style art for a limited-run physical release in the medium-term.
